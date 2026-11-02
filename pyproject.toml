@@ -1,0 +1,38 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "pybind11>=2.13"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "optlib"
+version = "0.0.1"  # keep in sync with project(VERSION ...) in CMakeLists.txt
+description = "Options pricing library: C++17 core with Python bindings"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Brad Beecher" }]
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26"]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "scipy>=1.11"]
+dev = ["pytest>=8", "scipy>=1.11", "ruff>=0.6"]
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+build-dir = "build/{wheel_tag}"   # reuse build dir between installs -> faster rebuilds
+cmake.build-type = "Release"
+wheel.packages = ["python/optlib"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["build", "_deps"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "NPY"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["optlib"]
