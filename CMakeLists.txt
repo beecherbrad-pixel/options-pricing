@@ -47,6 +47,7 @@ option(OPTLIB_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 # on its own and reused from pure C++)
 # ---------------------------------------------------------------------------
 add_library(optlib STATIC
+  src/black_scholes.cpp
   src/rates.cpp
   src/version.cpp
 )

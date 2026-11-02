@@ -14,6 +14,7 @@ set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 add_executable(optlib_tests
+  test_black_scholes.cpp
   test_rates.cpp
   test_version.cpp
 )
