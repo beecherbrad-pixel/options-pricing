@@ -1,0 +1,25 @@
+# Build output
+build/
+_skbuild/
+dist/
+*.egg-info/
+*.so
+*.pyd
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Data: only small committed samples under data/sample/
+data/*
+!data/sample/
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
