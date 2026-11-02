@@ -1,6 +1,6 @@
 # optlib
 
-[![CI](https://github.com/OWNER/options-pricing/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/options-pricing/actions/workflows/ci.yml)
+[![CI](https://github.com/beecherbrad-pixel/options-pricing/actions/workflows/ci.yml/badge.svg)](https://github.com/beecherbrad-pixel/options-pricing/actions/workflows/ci.yml)
 
 An options pricing library with a C++17 core and a Python API (pybind11).
 
