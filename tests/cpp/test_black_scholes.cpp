@@ -47,7 +47,7 @@ constexpr auto kPut = OptionType::Put;
 // Hull, Black-Scholes-Merton chapter: S=42, K=40, r=10%, sigma=20%, T=0.5.
 // Hull reports call = 4.76, put = 0.81.
 TEST(BsmHull, PricingExample) {
-  const BsmInputs in{42.0, 40.0, 0.5, 0.10, 0.0, 0.20};
+  const BsmInputs in{42.0, 40.0, 0.5, 0.10, 0.20, 0.0};
   EXPECT_NEAR(bsm_price(kCall, in), 4.76, 0.005);
   EXPECT_NEAR(bsm_price(kPut, in), 0.81, 0.005);
 }
@@ -56,7 +56,7 @@ TEST(BsmHull, PricingExample) {
 // Hull reports price 2.40, delta 0.522, gamma 0.066, vega 12.1,
 // theta -4.31 per year, rho 8.91.
 TEST(BsmHull, GreeksExample) {
-  const BsmInputs in{49.0, 50.0, 20.0 / 52.0, 0.05, 0.0, 0.20};
+  const BsmInputs in{49.0, 50.0, 20.0 / 52.0, 0.05, 0.20, 0.0};
   const Greeks g = bsm_greeks(kCall, in);
   EXPECT_NEAR(g.price, 2.40, 0.005);
   EXPECT_NEAR(g.delta, 0.522, 0.0005);
@@ -83,28 +83,28 @@ const std::vector<ReferenceCase>& reference_cases() {
   // fiasco").
   static const std::vector<ReferenceCase> cases{
       {kCall,
-       {42.0, 40.0, 0.5, 0.10, 0.0, 0.20},
+       {42.0, 40.0, 0.5, 0.10, 0.20, 0.0},
        {4.7594223928715334, 0.77913129094266894, 0.049962670405911853, 8.8134150596028514,
         -4.5590921945926267, 13.982045913360281}},
       {kPut,
-       {42.0, 40.0, 0.5, 0.10, 0.0, 0.20},
+       {42.0, 40.0, 0.5, 0.10, 0.20, 0.0},
        {0.80859937290009365, -0.22086870905733106, 0.049962670405911853, 8.8134150596028514,
         -0.7541744965897705, -5.0425425766539992}},
       {kCall,
-       {49.0, 50.0, 20.0 / 52.0, 0.05, 0.0, 0.20},
+       {49.0, 50.0, 20.0 / 52.0, 0.05, 0.20, 0.0},
        {2.4005273232717147, 0.52160466106639639, 0.065544039347844394, 12.1054798826288,
         -4.3053298229325736, 8.9069619496083495}},
       {kPut,
-       {49.0, 50.0, 20.0 / 52.0, 0.05, 0.0, 0.20},
+       {49.0, 50.0, 20.0 / 52.0, 0.05, 0.20, 0.0},
        {2.4481754412818496, -0.47839533893360361, 0.065544039347844394, 12.1054798826288,
         -1.8529474170320668, -9.957518095780164}},
       // With a dividend yield.
       {kCall,
-       {100.0, 95.0, 0.75, 0.03, 0.02, 0.35},
+       {100.0, 95.0, 0.75, 0.03, 0.35, 0.02},
        {14.554902082095149, 0.6256928811150684, 0.01221441717466344, 32.062845083491528,
         -7.67037633813357, 36.010789522058769}},
       {kPut,
-       {100.0, 95.0, 0.75, 0.03, 0.02, 0.35},
+       {100.0, 95.0, 0.75, 0.03, 0.35, 0.02},
        {8.9300756551558373, -0.35941905848799426, 0.01221441717466344, 32.062845083491528,
         -6.8540091913386868, -33.653986127966447}},
   };
@@ -131,7 +131,7 @@ TEST(BsmReference, PriceAndGreeksMatchHighPrecision) {
 // A put struck at 10% of spot is worth ~1e-118. A naive N(x) = 0.5(1 + erf(...))
 // returns exactly 0 here; erfc keeps full relative precision.
 TEST(BsmReference, DeepOutOfTheMoneyKeepsRelativePrecision) {
-  const BsmInputs in{100.0, 10.0, 0.25, 0.01, 0.0, 0.20};
+  const BsmInputs in{100.0, 10.0, 0.25, 0.01, 0.20, 0.0};
   const double expected = 9.8316395518625121e-119;
   EXPECT_NEAR(bsm_price(kPut, in) / expected, 1.0, 1e-9);
 }
@@ -147,7 +147,7 @@ std::vector<BsmInputs> input_grid() {
       for (double r : {-0.01, 0.0, 0.05}) {
         for (double q : {0.0, 0.03}) {
           for (double sigma : {0.05, 0.2, 0.8}) {
-            grid.push_back({spot, 100.0, T, r, q, sigma});
+            grid.push_back({spot, 100.0, T, r, sigma, q});
           }
         }
       }
@@ -196,7 +196,7 @@ TEST(BsmIdentities, NoArbitrageBounds) {
 }
 
 TEST(BsmIdentities, CallDecreasesAndPutIncreasesInStrike) {
-  BsmInputs in{100.0, 0.0, 0.5, 0.03, 0.01, 0.25};
+  BsmInputs in{100.0, 0.0, 0.5, 0.03, 0.25, 0.01};
   double prev_call = INFINITY;
   double prev_put = -INFINITY;
   for (double k = 50.0; k <= 150.0; k += 5.0) {
@@ -211,7 +211,7 @@ TEST(BsmIdentities, CallDecreasesAndPutIncreasesInStrike) {
 }
 
 TEST(BsmIdentities, PricesIncreaseInVolatility) {
-  BsmInputs in{100.0, 105.0, 0.5, 0.03, 0.01, 0.0};
+  BsmInputs in{100.0, 105.0, 0.5, 0.03, 0.0, 0.01};
   double prev_call = -1.0;
   double prev_put = -1.0;
   for (double sigma = 0.05; sigma <= 1.0; sigma += 0.05) {
@@ -228,7 +228,7 @@ TEST(BsmIdentities, PricesIncreaseInVolatility) {
 // With q = 0, a European call is worth more the longer it has to run. (Not true
 // for puts, or for calls with a large dividend yield: theta can be positive.)
 TEST(BsmIdentities, CallWithoutDividendsIncreasesInMaturity) {
-  BsmInputs in{100.0, 100.0, 0.0, 0.03, 0.0, 0.25};
+  BsmInputs in{100.0, 100.0, 0.0, 0.03, 0.25, 0.0};
   double prev = -1.0;
   for (double T = 0.05; T <= 5.0; T += 0.05) {
     in.T = T;
@@ -310,7 +310,7 @@ TEST(BsmFiniteDifference, AnalyticGreeksMatchBumpAndReprice) {
 
 TEST(BsmEdgeCases, AtExpiryPriceIsIntrinsic) {
   for (double spot : {80.0, 100.0, 120.0}) {
-    const BsmInputs in{spot, 100.0, 0.0, 0.05, 0.02, 0.3};
+    const BsmInputs in{spot, 100.0, 0.0, 0.05, 0.3, 0.02};
     EXPECT_DOUBLE_EQ(bsm_price(kCall, in), std::fmax(spot - 100.0, 0.0));
     EXPECT_DOUBLE_EQ(bsm_price(kPut, in), std::fmax(100.0 - spot, 0.0));
   }
@@ -334,7 +334,7 @@ TEST(BsmEdgeCases, ZeroVolIsDiscountedForwardPayoff) {
 
 // The formula should approach the zero-vol limit smoothly, not jump.
 TEST(BsmEdgeCases, TinyVolApproachesZeroVolLimit) {
-  const BsmInputs zero{100.0, 90.0, 1.0, 0.05, 0.01, 0.0};
+  const BsmInputs zero{100.0, 90.0, 1.0, 0.05, 0.0, 0.01};
   BsmInputs tiny = zero;
   tiny.sigma = 1e-8;
   EXPECT_TRUE(Close(bsm_price(kCall, tiny), bsm_price(kCall, zero), 1e-12));
@@ -342,7 +342,7 @@ TEST(BsmEdgeCases, TinyVolApproachesZeroVolLimit) {
 }
 
 TEST(BsmEdgeCases, NearExpiryAtTheMoneyIsFinite) {
-  const BsmInputs in{100.0, 100.0, 1e-10, 0.05, 0.0, 0.2};
+  const BsmInputs in{100.0, 100.0, 1e-10, 0.05, 0.2, 0.0};
   const Greeks g = bsm_greeks(kCall, in);
   EXPECT_TRUE(std::isfinite(g.price));
   EXPECT_TRUE(std::isfinite(g.gamma));  // large (~4e5) but finite
@@ -351,7 +351,7 @@ TEST(BsmEdgeCases, NearExpiryAtTheMoneyIsFinite) {
 }
 
 TEST(BsmEdgeCases, InvalidInputsThrow) {
-  const BsmInputs good{100.0, 100.0, 1.0, 0.05, 0.0, 0.2};
+  const BsmInputs good{100.0, 100.0, 1.0, 0.05, 0.2, 0.0};
   auto with = [&](auto modify) {
     BsmInputs in = good;
     modify(in);

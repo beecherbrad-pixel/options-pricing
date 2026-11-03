@@ -5,10 +5,10 @@
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
 #include <array>
 #include <string>
+#include <vector>
 
 #include "optlib/black_scholes.hpp"
 #include "optlib/rates.hpp"
@@ -24,7 +24,7 @@ namespace {
 // the BsmInputs struct.
 double price_scalar(optlib::OptionType type, double spot, double strike, double T, double r,
                     double sigma, double q) {
-  return optlib::bsm_price(type, {spot, strike, T, r, q, sigma});
+  return optlib::bsm_price(type, {spot, strike, T, r, sigma, q});
 }
 
 // Vectorized Greeks. py::vectorize only handles functions returning a single
@@ -65,7 +65,7 @@ py::dict greeks_array(optlib::OptionType type, const py::array_t<double>& spot,
 
   const py::ssize_t n = in[0].size();
   for (py::ssize_t i = 0; i < n; ++i) {
-    const optlib::Greeks g = optlib::bsm_greeks(type, {s[i], k[i], t[i], rr[i], qq[i], v[i]});
+    const optlib::Greeks g = optlib::bsm_greeks(type, {s[i], k[i], t[i], rr[i], v[i], qq[i]});
     p_price[i] = g.price;
     p_delta[i] = g.delta;
     p_gamma[i] = g.gamma;

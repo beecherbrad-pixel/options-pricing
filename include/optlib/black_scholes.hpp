@@ -26,15 +26,21 @@ namespace optlib {
 ///   r, q          continuously compounded annual rates as decimals (0.05 = 5%)
 ///   sigma         annualised volatility as a decimal (0.20 = 20%, not 20)
 ///
-/// An aggregate struct: no constructor, so it can be built with designated-style
-/// braces in order: BsmInputs{spot, strike, T, r, q, sigma}.
+/// An aggregate struct (no constructor), built with braces in declaration order:
+///   BsmInputs{spot, strike, T, r, sigma, q}
+///
+/// Brace initialisation matches fields by POSITION, not name, so swapping two
+/// doubles compiles silently and gives wrong prices. The field order therefore
+/// matches the Python API exactly, (spot, strike, T, r, sigma, q=0), so the
+/// same order is used everywhere. q comes last because it is optional in
+/// Python and usually zero.
 struct BsmInputs {
   double spot;    // S: current price of the underlying
   double strike;  // K
   double T;       // time to expiry in years
   double r;       // risk-free rate
-  double q;       // continuous dividend yield (or foreign rate for FX)
   double sigma;   // volatility
+  double q;       // continuous dividend yield (or foreign rate for FX)
 };
 
 /// Price sensitivities. All are per unit change in the input, per year:
