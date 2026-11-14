@@ -15,6 +15,7 @@ using optlib::bsm_price;
 using optlib::BsmInputs;
 using optlib::implied_vol;
 using optlib::ImpliedVolResult;
+using optlib::ImpliedVolOptions;
 using optlib::IvStatus;
 using optlib::OptionType;
 
@@ -117,7 +118,9 @@ TEST(ImpliedVolBounds, SigmaAboveMaxReported) {
 TEST(ImpliedVolBounds, SigmaAtMaxIsNotAboveMax) {
   const double K = 100.0;
   const double price = bsm_price(kCall, BsmInputs{kS, K, kT, kR, 2.0, kQ});
-  const ImpliedVolResult res = implied_vol(kCall, price, kS, K, kT, kR, kQ, {1e-12, 100, 2.0});
+  ImpliedVolOptions opts;
+  opts.sigma_max = 2.0;
+  const ImpliedVolResult res = implied_vol(kCall, price, kS, K, kT, kR, kQ, opts);
   EXPECT_EQ(res.status, IvStatus::MaxIterationsExceeded);
 }
 }  // namespace
