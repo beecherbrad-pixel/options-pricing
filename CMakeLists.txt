@@ -50,6 +50,7 @@ add_library(optlib STATIC
   src/black_scholes.cpp
   src/rates.cpp
   src/version.cpp
+  src/implied_vol.cpp
 )
 add_library(optlib::optlib ALIAS optlib)
 
