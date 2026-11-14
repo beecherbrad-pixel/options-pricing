@@ -105,4 +105,19 @@ TEST(ImpliedVolBounds, InteriorPriceIsStubbedForNow) {
   EXPECT_EQ(res.status, IvStatus::MaxIterationsExceeded);
   EXPECT_TRUE(std::isnan(res.sigma));
 }
+
+TEST(ImpliedVolBounds, SigmaAboveMaxReported) {
+  const double K = 100.0;
+  const double price = bsm_price(kCall, BsmInputs{kS, K, kT, kR, 3.0, kQ});
+  const ImpliedVolResult res = implied_vol(kCall, price, kS, K, kT, kR, kQ, {1e-12, 100, 2.0});
+  EXPECT_EQ(res.status, IvStatus::SigmaAboveMax);
+  EXPECT_TRUE(std::isnan(res.sigma));
+}
+
+TEST(ImpliedVolBounds, SigmaAtMaxIsNotAboveMax) {
+  const double K = 100.0;
+  const double price = bsm_price(kCall, BsmInputs{kS, K, kT, kR, 2.0, kQ});
+  const ImpliedVolResult res = implied_vol(kCall, price, kS, K, kT, kR, kQ, {1e-12, 100, 2.0});
+  EXPECT_EQ(res.status, IvStatus::MaxIterationsExceeded);
+}
 }  // namespace

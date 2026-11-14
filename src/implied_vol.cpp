@@ -47,6 +47,12 @@ ImpliedVolResult nan_result(IvStatus status) {
   return {std::numeric_limits<double>::quiet_NaN(), 0, status};
 }
 
+double initial_guess(double Sd, double Kd, double T){
+  // Manaster-Koehler inflection point of price vs sigma, floored at 0.1 (it is 0 at the money).
+  double sigma_0 = std::sqrt(2*std::abs(std::log(Sd / Kd)) / T);
+  return std::max(sigma_0, 0.1);
+}
+
 }  // namespace
 ImpliedVolResult implied_vol(OptionType type, double price, double spot, double strike, double T,
                              double r, double q, const ImpliedVolOptions& opts) {
@@ -76,9 +82,24 @@ ImpliedVolResult implied_vol(OptionType type, double price, double spot, double 
   const bool itm = lower > 0.0;
   const OptionType solve_type =
       itm ? (type == OptionType::Call ? OptionType::Put : OptionType::Call) : type;
-  // TODO (piece 4): solve bsm_price(solve_type, sigma) == time_value for sigma.
-  (void)time_value;  // silence unused variable warnings until piece 4
-  (void)solve_type;
+  
+  const auto price_at = [&](double sigma) {
+  return bsm_price(solve_type, BsmInputs{spot, strike, T, r, sigma, q});
+  };
+
+  if (price_at(opts.sigma_max) < time_value - eps) {
+    return nan_result(IvStatus::SigmaAboveMax);
+  }
+
+  double sigma = std::min(initial_guess(Sd, Kd, T), opts.sigma_max);
+  double sigma_lo = 0.0;
+  double sigma_hi = opts.sigma_max;
+
+
+   // TODO(piece 4): solve price_at(sigma) == time_value for sigma.
+  (void)sigma;  // unused until piece 4
+  (void)sigma_lo;
+  (void)sigma_hi;
   return nan_result(IvStatus::MaxIterationsExceeded);
 }
 
