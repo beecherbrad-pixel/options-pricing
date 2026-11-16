@@ -86,6 +86,9 @@ ImpliedVolResult implied_vol(OptionType type, double price, double spot, double 
   const auto price_at = [&](double sigma) {
     return bsm_price(solve_type, BsmInputs{spot, strike, T, r, sigma, q});
   };
+  const auto greeks_at = [&](double sigma) {
+    return bsm_greeks(solve_type, BsmInputs{spot, strike, T, r, sigma, q});
+  };
 
   if (price_at(opts.sigma_max) < time_value - eps) {
     return nan_result(IvStatus::SigmaAboveMax);
@@ -95,11 +98,29 @@ ImpliedVolResult implied_vol(OptionType type, double price, double spot, double 
   double sigma_lo = 0.0;
   double sigma_hi = opts.sigma_max;
 
-  // TODO(piece 4): solve price_at(sigma) == time_value for sigma.
-  (void)sigma;  // unused until piece 4
-  (void)sigma_lo;
-  (void)sigma_hi;
-  return nan_result(IvStatus::MaxIterationsExceeded);
+  for (int i = 1; i <= opts.max_iter; i++) {
+    const Greeks g = greeks_at(sigma);
+    const double diff = g.price - time_value;
+
+    if (diff == 0.0) return {sigma, i, IvStatus::Converged};
+
+    if (diff > 0) {
+      sigma_hi = sigma;
+    } else {
+      sigma_lo = sigma;
+    }
+    double next = sigma - diff / g.vega;
+    if (!(next < sigma_hi && next > sigma_lo)) {
+      next = 0.5 * (sigma_lo + sigma_hi);
+    }
+
+    if (std::abs(next - sigma) < opts.sigma_tolerance) return {next, i, IvStatus::Converged};
+    if (sigma_hi - sigma_lo < opts.sigma_tolerance)
+      return {0.5 * (sigma_lo + sigma_hi), i, IvStatus::Converged};
+    sigma = next;
+  }
+
+  return {std::numeric_limits<double>::quiet_NaN(), opts.max_iter, IvStatus::MaxIterationsExceeded};
 }
 
 }  // namespace optlib
