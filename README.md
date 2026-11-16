@@ -120,7 +120,7 @@ Sigma is NaN for all but the first two.
   extreme cases (for example K = 50, S = 100, T = 0.25, sigma = 20%). Solving the equivalent
   out-of-the-money option directly from its own price recovers sigma to ~1e-15.
 - *Iteration count.* Typical contracts converge in 4–10 iterations. Far out-of-the-money,
-  short-dated contracts, where price behaves like `exp(-c / sigma^2)`, can take 20–50. Newton on
+  short-dated contracts, where price behaves like `exp(-c / sigma^2)`, can take 20–60, with the exact count varying by compiler. Newton on
   log-price fixes those wings but is slower near the money at high vol. Jäckel's
   ["Let's Be Rational"](http://www.jaeckel.org/LetsBeRational.pdf) (2015) reaches machine
   precision in two iterations everywhere and is the natural benchmark for a later phase.
