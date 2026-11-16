@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "optlib/black_scholes.hpp"
+#include "optlib/implied_vol.hpp"
 #include "optlib/rates.hpp"
 #include "optlib/version.hpp"
 
@@ -77,6 +78,46 @@ py::dict greeks_array(optlib::OptionType type, const py::array_t<double>& spot,
                   "theta"_a = out[4], "rho"_a = out[5]);
 }
 
+py::dict implied_vol_array(optlib::OptionType type, const py::array_t<double>& price,
+                           const py::array_t<double>& spot, const py::array_t<double>& strike,
+                           const py::array_t<double>& T, const py::array_t<double>& r,
+                           const py::array_t<double>& q) {
+  // np.broadcast_arrays applies standard NumPy broadcasting (scalars, (n,1) x (1,m), ...).
+  py::module_ np = py::module_::import("numpy");
+  py::tuple b = np.attr("broadcast_arrays")(price, spot, strike, T, r, q);
+  // forcecast + c_style: make each a C-contiguous float64 array (copying if needed).
+  using Arr = py::array_t<double, py::array::c_style | py::array::forcecast>;
+  std::array<Arr, 6> in{Arr::ensure(b[0]), Arr::ensure(b[1]), Arr::ensure(b[2]),
+                        Arr::ensure(b[3]), Arr::ensure(b[4]), Arr::ensure(b[5])};
+
+  const auto shape = std::vector<py::ssize_t>(in[0].shape(), in[0].shape() + in[0].ndim());
+  py::array_t<double> sigma_out(shape);
+  py::array_t<int> iterations_out(shape);
+  py::array_t<int> status_out(shape);
+
+  // Raw pointers into the arrays' memory. `const double*` for inputs: we
+  // promise not to write through them.
+  const double* p = in[0].data();
+  const double* s = in[1].data();
+  const double* k = in[2].data();
+  const double* t = in[3].data();
+  const double* rr = in[4].data();
+  const double* qq = in[5].data();
+  double* sigma = sigma_out.mutable_data();
+  int* iterations = iterations_out.mutable_data();
+  int* status = status_out.mutable_data();
+
+  const py::ssize_t n = in[0].size();
+  for (py::ssize_t i = 0; i < n; ++i) {
+    const optlib::ImpliedVolResult iv =
+        optlib::implied_vol(type, p[i], s[i], k[i], t[i], rr[i], qq[i]);
+    sigma[i] = iv.sigma;
+    iterations[i] = iv.iterations;
+    status[i] = static_cast<int>(iv.status);
+  }
+  return py::dict("sigma"_a = sigma_out, "iterations"_a = iterations_out, "status"_a = status_out);
+}
+
 }  // namespace
 
 // The module name here must match the target name in CMakeLists.txt (_core).
@@ -105,6 +146,14 @@ T : float
       .value("Call", optlib::OptionType::Call)
       .value("Put", optlib::OptionType::Put);
 
+  py::enum_<optlib::IvStatus>(m, "IvStatus")
+      .value("Converged", optlib::IvStatus::Converged)
+      .value("PriceAtLowerBound", optlib::IvStatus::PriceAtLowerBound)
+      .value("PriceBelowLowerBound", optlib::IvStatus::PriceBelowLowerBound)
+      .value("PriceAtOrAboveUpperBound", optlib::IvStatus::PriceAtOrAboveUpperBound)
+      .value("SigmaAboveMax", optlib::IvStatus::SigmaAboveMax)
+      .value("MaxIterationsExceeded", optlib::IvStatus::MaxIterationsExceeded);
+
   // Exceptions: pybind11 translates std::invalid_argument to Python ValueError
   // automatically, so invalid inputs raise ValueError in Python.
 
@@ -118,4 +167,8 @@ T : float
   m.def("bsm_greeks", &greeks_array, "option_type"_a, "spot"_a, "strike"_a, "T"_a, "r"_a, "sigma"_a,
         "q"_a = 0.0,
         "Black-Scholes-Merton price and Greeks as a dict of arrays. Inputs broadcast like NumPy.");
+  m.def("implied_vol", &implied_vol_array, "option_type"_a, "price"_a, "spot"_a, "strike"_a, "T"_a,
+        "r"_a, "q"_a = 0.0,
+        "Implied volatility as a dict of arrays (sigma, iterations, status). Inputs broadcast like "
+        "NumPy.");
 }

@@ -17,6 +17,7 @@ add_executable(optlib_tests
   test_black_scholes.cpp
   test_rates.cpp
   test_version.cpp
+  test_implied_vol.cpp
 )
 target_link_libraries(optlib_tests PRIVATE optlib::optlib optlib_warnings GTest::gtest_main)
 
