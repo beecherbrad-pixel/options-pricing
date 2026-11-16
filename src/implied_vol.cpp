@@ -109,7 +109,14 @@ ImpliedVolResult implied_vol(OptionType type, double price, double spot, double 
     } else {
       sigma_lo = sigma;
     }
-    double next = sigma - diff / g.vega;
+    // Converged on the Newton step itself: a step below the tolerance can round
+    // `next` onto the bracket edge, and the safeguard would then reject a correct
+    // answer and bisect away from it.
+    const double step = diff / g.vega;
+    if (std::abs(step) < opts.sigma_tolerance) {
+      return {sigma - step, i, IvStatus::Converged};
+    }
+    double next = sigma - step;
     if (!(next < sigma_hi && next > sigma_lo)) {
       next = 0.5 * (sigma_lo + sigma_hi);
     }

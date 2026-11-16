@@ -141,10 +141,9 @@ TEST(ImpliedVolSolver, RoundTripGrid) {
           }
           EXPECT_TRUE(Close(bsm_price(type, BsmInputs{kS, K, T, kR, res.sigma, kQ}), price, 1e-12));
           // Contracts with real time value converge in a handful of Newton steps (at most
-          // 13 on this grid). Far-wing contracts spend many iterations bisecting, and the
-          // exact count depends on last-digit rounding, which differs between GCC and
-          // Clang (32 vs 60 for the K = 50, T = 0.25 put). For those, only convergence,
-          // checked above, is required.
+          // 13 on this grid). Far-wing contracts start far from the root and lean on
+          // bisection (up to ~32 iterations), so for those only convergence, checked
+          // above, is required.
           if (time_value > 1e-4) {
             EXPECT_LE(res.iterations, 20);
           }
